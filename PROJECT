@@ -1,0 +1,24 @@
+domain: ncloud.com
+layout:
+- go.kubebuilder.io/v3
+projectName: ncloud-pca-issuer
+repo: github.com/NaverCloudPlatform/ncloud-pca-issuer
+resources:
+- api:
+    crdVersion: v1
+  controller: true
+  domain: ncloud.com
+  group: privateca-issuer
+  kind: NcloudPCAClusterIssuer
+  path: github.com/NaverCloudPlatform/ncloud-pca-issuer/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: ncloud.com
+  group: privateca-issuer
+  kind: NcloudPCAIssuer
+  path: github.com/NaverCloudPlatform/ncloud-pca-issuer/api/v1alpha1
+  version: v1alpha1
+version: "3"

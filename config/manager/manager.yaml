@@ -1,0 +1,40 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ncloud-pca-issuer
+  namespace: cert-manager
+  labels:
+    app: cert-manager-ncloud-pca-issuer
+spec:
+  selector:
+    matchLabels:
+      app: cert-manager-ncloud-pca-issuer
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cert-manager-ncloud-pca-issuer
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - command:
+        - /ncloud-pca-issuer
+        args:
+        - --zap-devel
+        - "true"
+        image: nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:latest
+        imagePullPolicy: Always
+        name: ncloud-pca-issuer
+        securityContext:
+          allowPrivilegeEscalation: false
+        resources:
+          limits:
+            cpu: 100m
+            memory: 90Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      serviceAccountName: ncloud-pca-issuer-sa
+      terminationGracePeriodSeconds: 10

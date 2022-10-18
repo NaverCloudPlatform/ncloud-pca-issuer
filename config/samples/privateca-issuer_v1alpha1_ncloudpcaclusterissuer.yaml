@@ -1,0 +1,12 @@
+# ncloudpcaclusterissuer-sample.yaml
+apiVersion: privateca-issuer.ncloud.com/v1alpha1
+kind: NcloudPCAClusterIssuer
+metadata:
+  name: clusterissuer-sample
+spec:
+  caTag: abcd1234-efgh5678
+  keyType: RSA
+  keyBits: '4096'
+  ncloudApiGw: https://pca.apigw.ntruss.com
+  secretRef:
+    name: ncloud-secret

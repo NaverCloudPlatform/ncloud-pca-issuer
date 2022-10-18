@@ -1,0 +1,20 @@
+# permissions for end users to view ncloudpcaissuers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ncloudpcaissuer-viewer-role
+rules:
+- apiGroups:
+  - privateca-issuer.ncloud.com
+  resources:
+  - ncloudpcaissuers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - privateca-issuer.ncloud.com
+  resources:
+  - ncloudpcaissuers/status
+  verbs:
+  - get
