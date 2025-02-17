@@ -145,6 +145,7 @@ func newSignerNoSelftest(ctx context.Context, spec *v1alpha1.NcloudPCAIssuerSpec
 
 func (p *pcaSigner) creatPcaClient() (pcaClient *privateca.APIClient, err error) {
 	var apiKey *ncloud.APIKey
+	os.Setenv("NCLOUD_API_GW", p.ncloudApiGw)
 	if p.spec.SecretRef.Name != "" {
 		if p.spec.SecretRef.Namespace == "" {
 			p.spec.SecretRef.Namespace = p.namespace
@@ -181,9 +182,9 @@ func (p *pcaSigner) creatPcaClient() (pcaClient *privateca.APIClient, err error)
 			SecretKey: string(secretKey),
 		}
 
-		os.Setenv("NCLOUD_API_GW", p.ncloudApiGw)
 		pcaClient = privateca.NewAPIClient(privateca.NewConfiguration(apiKey))
-
+	} else {
+		pcaClient = privateca.NewAPIClient(privateca.NewConfiguration())
 	}
 	return pcaClient, nil
 }

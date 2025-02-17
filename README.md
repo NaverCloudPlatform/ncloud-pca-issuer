@@ -1,5 +1,5 @@
 # Ncloud Private CA Issuer for cert-manager
-이 레포지토리는 네이버 클라우드 [Private CA](https://www.ncloud.com/product/security/privateCA)를 사용하는 cert-manager의 [external Issuer](https://cert-manager.io/docs.contributing/external-issuers/)를 포함하고 있습니다.
+이 레포지토리는 네이버 클라우드 [Private CA](https://www.ncloud.com/product/security/privateCA)를 사용하는 cert-manager의 [external Issuer](https://cert-manager.io/docs/configuration/external/#known-external-issuers)를 포함하고 있습니다.
 
 ## 시작하기
 
