@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: ncloudpcaissuers.privateca-issuer.ncloud.com
 spec:
   group: privateca-issuer.ncloud.com
@@ -15,116 +14,115 @@ spec:
     singular: ncloudpcaissuer
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .spec.region
+      name: Region
+      type: string
+    - jsonPath: .spec.caTag
+      name: CaTag
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: NcloudPCAIssuer is the Schema for the ncloudpcaissuers API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
-            description: NcloudPCAIssuerSpec defines the desired state of NcloudPCAIssuer
+            description: NcloudPCAIssuerSpec defines the desired state of a Ncloud
+              Private CA Issuer.
             properties:
+              apiGatewayUrl:
+                description: |-
+                  APIGatewayURL overrides the region-derived API gateway URL.
+                  Advanced use only (e.g. private gateway, testing). Leave empty to use Region.
+                type: string
               caTag:
-                description: CaTag is the id of the CA to issue certificates from
+                description: CaTag is the Private CA tag ID shown on the NCloud console.
+                minLength: 1
                 type: string
-              keyBits:
-                description: KeyBits is the bit length of the CA Public key
-                type: string
-              keyType:
-                description: KeyType is the Algorithm type of the CA Public key
-                type: string
-              ncloudApiGw:
-                description: NcloudApiGw is the URL for NCLOUD API Gateway
-                type: string
-              secretRef:
-                description: Needs to be specified if you want to authorize with AWS
-                  using an access and secret key
+              credentialsRef:
+                description: CredentialsRef references the Secret containing NCloud
+                  API credentials.
                 properties:
-                  accessKeyIDSelector:
-                    description: Specifies the secret key where the AWS Access Key
-                      ID exists
-                    properties:
-                      key:
-                        description: The key of the secret to select from.  Must be
-                          a valid secret key.
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                          TODO: Add other useful fields. apiVersion, kind, uid?'
-                        type: string
-                      optional:
-                        description: Specify whether the Secret or its key must be
-                          defined
-                        type: boolean
-                    required:
-                    - key
-                    type: object
-                    x-kubernetes-map-type: atomic
+                  accessKeyField:
+                    default: NCLOUD_ACCESS_KEY
+                    description: AccessKeyField is the Secret data key holding the
+                      NCloud access key.
+                    type: string
                   name:
-                    description: Name is unique within a namespace to reference a
-                      secret resource.
+                    description: Name of the Secret.
+                    minLength: 1
                     type: string
                   namespace:
-                    description: Namespace defines the space within which the secret
-                      name must be unique.
+                    description: Namespace of the Secret. Required for ClusterIssuer;
+                      ignored for namespaced Issuer.
                     type: string
-                  secretAccessKeySelector:
-                    description: Specifies the secret key where the AWS Secret Access
-                      Key exists
-                    properties:
-                      key:
-                        description: The key of the secret to select from.  Must be
-                          a valid secret key.
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                          TODO: Add other useful fields. apiVersion, kind, uid?'
-                        type: string
-                      optional:
-                        description: Specify whether the Secret or its key must be
-                          defined
-                        type: boolean
-                    required:
-                    - key
-                    type: object
-                    x-kubernetes-map-type: atomic
+                  secretKeyField:
+                    default: NCLOUD_SECRET_KEY
+                    description: SecretKeyField is the Secret data key holding the
+                      NCloud secret key.
+                    type: string
+                required:
+                - name
                 type: object
-                x-kubernetes-map-type: atomic
+              region:
+                default: public
+                description: Region selects the NCloud realm. Determines the API gateway
+                  URL.
+                enum:
+                - public
+                - gov
+                - fin
+                type: string
+            required:
+            - caTag
+            - credentialsRef
             type: object
           status:
-            description: NcloudPCAIssuerStatus defines the observed state of NcloudPCAIssuer
+            description: NcloudPCAIssuerStatus defines the observed state of NcloudPCAIssuer.
             properties:
               conditions:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
                 items:
-                  description: IssuerCondition contains condition information for
-                    a PCA Issuer.
+                  description: NcloudPCAIssuerCondition contains condition information
+                    for a PCA Issuer.
                   properties:
                     lastTransitionTime:
-                      description: LastTransitionTime is the timestamp corresponding
-                        to the last status change of this condition.
+                      description: |-
+                        LastTransitionTime is the timestamp corresponding to the last status
+                        change of this condition.
                       format: date-time
                       type: string
                     message:
-                      description: Message is a human readable description of the
-                        details of the last transition, complementing reason.
+                      description: |-
+                        Message is a human readable description of the details of the last
+                        transition, complementing reason.
                       type: string
                     reason:
-                      description: Reason is a brief machine readable explanation
-                        for the condition's last transition.
+                      description: |-
+                        Reason is a brief machine readable explanation for the condition's last
+                        transition.
                       type: string
                     status:
                       description: Status of the condition, one of ('True', 'False',

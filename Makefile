@@ -1,6 +1,8 @@
 
+# Release version. Single source of truth for the image tag.
+VERSION ?= v0.2.0
 # Image URL to use all building/pushing image targets
-IMG ?= nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:latest
+IMG ?= nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:$(VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
@@ -71,7 +73,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker buildx build --platform linux/amd64 -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -103,7 +105,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 CONTROLLER_GEN = $(shell which controller-gen)
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2)
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.20.1)
 
 KUSTOMIZE = $(shell which kustomize)
 .PHONY: kustomize

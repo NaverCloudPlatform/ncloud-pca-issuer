@@ -1,6 +1,32 @@
 # Ncloud Private CA Issuer for cert-manager
 이 레포지토리는 네이버 클라우드 [Private CA](https://www.ncloud.com/product/security/privateCA)를 사용하는 cert-manager의 [external Issuer](https://cert-manager.io/docs/configuration/external/#known-external-issuers)를 포함하고 있습니다.
 
+발급된 Secret에는 `tls.crt`에 leaf 인증서와 중간 CA 체인이, `ca.crt`에 루트 CA가 저장됩니다. 따라서 상대방이 별도로 중간 CA를 신뢰하지 않아도 TLS handshake가 검증됩니다.
+
+## v0.2.0 Breaking Changes
+v0.1.x에서 업그레이드하는 경우 Issuer/ClusterIssuer spec 스키마가 변경되어 기존 리소스 재생성이 필요합니다.
+
+- `keyType`, `keyBits` 제거 — CA 인증서로부터 자동 추론됩니다.
+- `ncloudApiGw` → `apiGatewayUrl` (옵션). 일반 사용자는 `region`만 지정하면 됩니다.
+- `secretRef` → `credentialsRef`로 평탄화. 기본 키 이름은 `NCLOUD_ACCESS_KEY`, `NCLOUD_SECRET_KEY`이며 `accessKeyField`, `secretKeyField`로 오버라이드 가능합니다.
+- `region` 필드 추가: `public`(민간, 기본값) / `gov`(공공) / `fin`(금융).
+- 기존 버전에서는 인증서 체인이 제대로 구성되지 않아 외부 TLS 클라이언트 검증이 실패하던 문제가 수정되었습니다. 업그레이드 후 Certificate 리소스는 다음 renewal에서 자동으로 새 체인으로 갱신됩니다.
+
+### 업그레이드 경로
+기존 v0.1.x에서 올라오는 경우 Issuer/ClusterIssuer는 새 스키마로 재생성이 필요합니다.
+
+```shell
+# 1. 기존 Issuer/ClusterIssuer 삭제 (Certificate 리소스는 유지).
+# -A 옵션으로 모든 네임스페이스의 Issuer까지 포함.
+kubectl delete ncloudpcaissuer --all -A
+kubectl delete ncloudpcaclusterissuer --all
+
+# 2. 새 CRD 적용 + 컨트롤러 v0.2.0 배포 (설치 섹션 참고)
+
+# 3. 신규 스키마로 Issuer 재생성 (아래 '시작하기' 샘플 참고)
+```
+Certificate 리소스는 그대로 두면 컨트롤러가 다음 reconcile에서 새 체인으로 갱신합니다.
+
 ## 시작하기
 
 ### 사전준비
@@ -21,7 +47,7 @@
 버전에 맞춰 아래 명령을 수행합니다.
 
 ```shell
-kubectl apply -f https://github.com/NaverCloudPlatform/ncloud-pca-issuer/releases/download/v0.1.0/ncloud-pca-issuer-v0.1.0.yaml
+kubectl apply -f https://github.com/NaverCloudPlatform/ncloud-pca-issuer/releases/download/v0.2.0/ncloud-pca-issuer-v0.2.0.yaml
 ```
 
 
@@ -62,7 +88,7 @@ make docker-build
 Docker 이미지 푸시하고 kind에 load해 테스트:
 
 ```shell
-make docker-push || kind load docker-image nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:latest
+make docker-push || kind load docker-image nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:v0.2.0
 ```
 
 #### controller 배포하기
@@ -91,7 +117,7 @@ spec:
       serviceAccountName: controller-manager
       containers:
       # update the image to your registry if you built and pushed your own image.
-      - image: nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:latest 
+      - image: nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:v0.2.0
         imagePullPolicy: IfNotPresent
         name: ncloud-pca-issuer
         resources:
@@ -139,11 +165,16 @@ metadata:
 spec:
   # Private CA에 생성된 Root CA TAG
   caTag: 12345678-abcdefg
-  # 민간클라우드 : https://pca.apigw.ntruss.com, 공공클라우드 : https://privateca.apigw.gov-ntruss.com
-  ncloudApiGw: https://pca.apigw.ntruss.com
-  # AccessKey, SecretKey가 저장된 Secret
-  secretRef:
+  # 리얼름 선택: public(민간, 기본값) / gov(공공) / fin(금융)
+  region: public
+  # AccessKey, SecretKey가 저장된 Secret 참조
+  credentialsRef:
     name: ncloud-secret
+    # 기본 키 이름을 쓰지 않을 때만 지정
+    # accessKeyField: NCLOUD_ACCESS_KEY
+    # secretKeyField: NCLOUD_SECRET_KEY
+  # (고급) region이 매핑하는 URL 대신 사내 프록시/스테이징 게이트웨이로 보내야 할 때만 사용
+  # apiGatewayUrl: https://pca.apigw.staging.example.com
 ```
 
 ```shell
@@ -161,10 +192,10 @@ metadata:
 spec:
   # Private CA에 생성된 Root CA TAG
   caTag: 12345678-abcdefg
-  # 민간클라우드 : https://pca.apigw.ntruss.com, 공공클라우드 : https://privateca.apigw.gov-ntruss.com
-  ncloudApiGw: https://pca.apigw.ntruss.com
-  # AccessKey, SecretKey가 저장된 Secret
-  secretRef:
+  # 리얼름 선택: public(민간, 기본값) / gov(공공) / fin(금융)
+  region: public
+  # ClusterIssuer는 namespace를 반드시 지정해야 함
+  credentialsRef:
     name: ncloud-secret
     namespace: cert-manager
 ```

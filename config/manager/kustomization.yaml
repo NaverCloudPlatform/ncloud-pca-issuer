@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer
-  newTag: latest
+  newTag: v0.2.0

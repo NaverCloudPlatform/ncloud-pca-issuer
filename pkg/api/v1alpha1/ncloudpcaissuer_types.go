@@ -17,50 +17,53 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// NcloudPCAIssuerSpec defines the desired state of NcloudPCAIssuer
+// NcloudPCAIssuerSpec defines the desired state of a Ncloud Private CA Issuer.
 type NcloudPCAIssuerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// CaTag is the Private CA tag ID shown on the NCloud console.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	CaTag string `json:"caTag"`
 
-	// CaTag is the id of the CA to issue certificates from
-	CaTag string `json:"caTag,omitempty"`
+	// Region selects the NCloud realm. Determines the API gateway URL.
+	// +kubebuilder:validation:Enum=public;gov;fin
+	// +kubebuilder:default=public
+	Region string `json:"region,omitempty"`
 
-	// KeyType is the Algorithm type of the CA Public key
-	KeyType string `json:"keyType,omitempty"`
-
-	// KeyBits is the bit length of the CA Public key
-	KeyBits string `json:"keyBits,omitempty"`
-
-	// NcloudApiGw is the URL for NCLOUD API Gateway
-	NcloudApiGw string `json:"ncloudApiGw,omitempty"`
-
-	// Needs to be specified if you want to authorize with AWS using an access and secret key
+	// APIGatewayURL overrides the region-derived API gateway URL.
+	// Advanced use only (e.g. private gateway, testing). Leave empty to use Region.
 	// +optional
-	SecretRef NcloudCredentialsSecretReference `json:"secretRef,omitempty"`
+	APIGatewayURL string `json:"apiGatewayUrl,omitempty"`
+
+	// CredentialsRef references the Secret containing NCloud API credentials.
+	// +kubebuilder:validation:Required
+	CredentialsRef NcloudCredentialsRef `json:"credentialsRef"`
 }
 
-//AWSCredentialsSecretReference defines the secret used by the issuer
-type NcloudCredentialsSecretReference struct {
-	v1.SecretReference `json:""`
-	// Specifies the secret key where the AWS Access Key ID exists
+// NcloudCredentialsRef points to the Secret that stores the NCloud API access and secret keys.
+type NcloudCredentialsRef struct {
+	// Name of the Secret.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Namespace of the Secret. Required for ClusterIssuer; ignored for namespaced Issuer.
 	// +optional
-	AccessKeyIDSelector v1.SecretKeySelector `json:"accessKeyIDSelector,omitempty"`
-	// Specifies the secret key where the AWS Secret Access Key exists
-	// +optional
-	SecretAccessKeySelector v1.SecretKeySelector `json:"secretAccessKeySelector,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+
+	// AccessKeyField is the Secret data key holding the NCloud access key.
+	// +kubebuilder:default=NCLOUD_ACCESS_KEY
+	AccessKeyField string `json:"accessKeyField,omitempty"`
+
+	// SecretKeyField is the Secret data key holding the NCloud secret key.
+	// +kubebuilder:default=NCLOUD_SECRET_KEY
+	SecretKeyField string `json:"secretKeyField,omitempty"`
 }
 
-// NcloudPCAIssuerStatus defines the observed state of NcloudPCAIssuer
+// NcloudPCAIssuerStatus defines the observed state of NcloudPCAIssuer.
 type NcloudPCAIssuerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 	Conditions []NcloudPCAIssuerCondition `json:"conditions,omitempty"`
 }
 
@@ -79,24 +82,18 @@ const (
 // +kubebuilder:validation:Enum=True;False;Unknown
 type ConditionStatus string
 
-// These are valid condition statuses. "ConditionTrue" means a resource is in
-// the condition; "ConditionFalse" means a resource is not in the condition;
-// "ConditionUnknown" means kubernetes can't decide if a resource is in the
-// condition or not. In the future, we could add other intermediate
-// conditions, e.g. ConditionDegraded.
 const (
-	// ConditionTrue represents the fact that a given condition is true
-	ConditionTrue ConditionStatus = "True"
-
-	// ConditionFalse represents the fact that a given condition is false
-	ConditionFalse ConditionStatus = "False"
-
-	// ConditionUnknown represents the fact that a given condition is unknown
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
 	ConditionUnknown ConditionStatus = "Unknown"
 )
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+//+kubebuilder:printcolumn:name="Region",type=string,JSONPath=`.spec.region`
+//+kubebuilder:printcolumn:name="CaTag",type=string,JSONPath=`.spec.caTag`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // NcloudPCAIssuer is the Schema for the ncloudpcaissuers API
 type NcloudPCAIssuer struct {
@@ -119,6 +116,10 @@ type NcloudPCAIssuerList struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
+//+kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+//+kubebuilder:printcolumn:name="Region",type=string,JSONPath=`.spec.region`
+//+kubebuilder:printcolumn:name="CaTag",type=string,JSONPath=`.spec.caTag`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // NcloudPCAClusterIssuer is the Schema for the ncloudpcaclusterissuers API
 type NcloudPCAClusterIssuer struct {
@@ -138,7 +139,7 @@ type NcloudPCAClusterIssuerList struct {
 	Items           []NcloudPCAClusterIssuer `json:"items"`
 }
 
-// IssuerCondition contains condition information for a PCA Issuer.
+// NcloudPCAIssuerCondition contains condition information for a PCA Issuer.
 type NcloudPCAIssuerCondition struct {
 	// Type of the condition, currently ('Ready').
 	Type NcloudPCAIssuerConditionType `json:"type"`

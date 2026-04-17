@@ -26,10 +26,13 @@ var (
 
 type V1ApiService service
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param activateSubCa
 @param caTag caTag
-@return *ActivateSubCaResponse*/
+@return *ActivateSubCaResponse
+*/
 func (a *V1ApiService) CaCaTagActivatePost(ctx context.Context, activateSubCa *ActivateSubCa, caTag *string) (*ActivateSubCaResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
@@ -100,11 +103,16 @@ func (a *V1ApiService) CaCaTagActivatePost(ctx context.Context, activateSubCa *A
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
 @param optional (nil or map[string]interface{}) with one or more of:
-    @param "pageNo" (string)
-@return *ListIssuedEndCertsResponse*/
+
+	@param "pageNo" (string)
+
+@return *ListIssuedEndCertsResponse
+*/
 func (a *V1ApiService) CaCaTagCertGet(ctx context.Context, caTag *string, localVarOptionals map[string]interface{}) (*ListIssuedEndCertsResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -173,10 +181,13 @@ func (a *V1ApiService) CaCaTagCertGet(ctx context.Context, caTag *string, localV
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param createEndCert
 @param caTag caTag
-@return *IssueEndCertResponse*/
+@return *IssueEndCertResponse
+*/
 func (a *V1ApiService) CaCaTagCertPost(ctx context.Context, createEndCert *CreateEndCert, caTag *string) (*IssueEndCertResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
@@ -247,10 +258,13 @@ func (a *V1ApiService) CaCaTagCertPost(ctx context.Context, createEndCert *Creat
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
 @param serialNo serialNo
-@return *GetEndCertInfoResponse*/
+@return *GetEndCertInfoResponse
+*/
 func (a *V1ApiService) CaCaTagCertSerialNoGet(ctx context.Context, caTag *string, serialNo *string) (*GetEndCertInfoResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -313,10 +327,13 @@ func (a *V1ApiService) CaCaTagCertSerialNoGet(ctx context.Context, caTag *string
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
 @param serialNo serialNo
-@return *BaseResponse*/
+@return *BaseResponse
+*/
 func (a *V1ApiService) CaCaTagCertSerialNoRevokePost(ctx context.Context, caTag *string, serialNo *string) (*BaseResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
@@ -379,12 +396,17 @@ func (a *V1ApiService) CaCaTagCertSerialNoRevokePost(ctx context.Context, caTag 
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param signCsr
 @param caTag caTag
 @param optional (nil or map[string]interface{}) with one or more of:
-    @param "period" (string)
-@return */
+
+	@param "period" (string)
+
+@return
+*/
 func (a *V1ApiService) CaCaTagCertSignPost(ctx context.Context, signCsr *SignCsr, caTag *string, localVarOptionals map[string]interface{}) (*SignCsrResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
@@ -460,9 +482,12 @@ func (a *V1ApiService) CaCaTagCertSignPost(ctx context.Context, signCsr *SignCsr
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return *GetChainResponse*/
+@return *GetChainResponse
+*/
 func (a *V1ApiService) CaCaTagChainGet(ctx context.Context, caTag *string) (*GetChainResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -524,9 +549,12 @@ func (a *V1ApiService) CaCaTagChainGet(ctx context.Context, caTag *string) (*Get
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return */
+@return
+*/
 func (a *V1ApiService) CaCaTagCrlConfigGet(ctx context.Context, caTag *string) error {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -579,10 +607,13 @@ func (a *V1ApiService) CaCaTagCrlConfigGet(ctx context.Context, caTag *string) e
 	return err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param updateCrlConfig
 @param caTag caTag
-@return */
+@return
+*/
 func (a *V1ApiService) CaCaTagCrlConfigPut(ctx context.Context, updateCrlConfig *UpdateCrlConfig, caTag *string) error {
 	var (
 		localVarHttpMethod = strings.ToUpper("Put")
@@ -644,9 +675,12 @@ func (a *V1ApiService) CaCaTagCrlConfigPut(ctx context.Context, updateCrlConfig 
 	return err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return *GetCrlResponse*/
+@return *GetCrlResponse
+*/
 func (a *V1ApiService) CaCaTagCrlGet(ctx context.Context, caTag *string) (*GetCrlResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -708,9 +742,12 @@ func (a *V1ApiService) CaCaTagCrlGet(ctx context.Context, caTag *string) (*GetCr
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return *BaseResponse*/
+@return *BaseResponse
+*/
 func (a *V1ApiService) CaCaTagDelete(ctx context.Context, caTag *string) (*BaseResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Delete")
@@ -772,9 +809,12 @@ func (a *V1ApiService) CaCaTagDelete(ctx context.Context, caTag *string) (*BaseR
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return *GetCaInfoResponse*/
+@return *GetCaInfoResponse
+*/
 func (a *V1ApiService) CaCaTagGet(ctx context.Context, caTag *string) (*GetCaInfoResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -836,10 +876,13 @@ func (a *V1ApiService) CaCaTagGet(ctx context.Context, caTag *string) (*GetCaInf
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param updateCa
 @param caTag caTag
-@return *UpdateCaResponse*/
+@return *UpdateCaResponse
+*/
 func (a *V1ApiService) CaCaTagPut(ctx context.Context, updateCa *UpdateCa, caTag *string) (*UpdateCaResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Put")
@@ -910,9 +953,12 @@ func (a *V1ApiService) CaCaTagPut(ctx context.Context, updateCa *UpdateCa, caTag
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return */
+@return
+*/
 func (a *V1ApiService) CaCaTagSubCsrGet(ctx context.Context, caTag *string) error {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -965,10 +1011,13 @@ func (a *V1ApiService) CaCaTagSubCsrGet(ctx context.Context, caTag *string) erro
 	return err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param signCsr
 @param caTag caTag
-@return */
+@return
+*/
 func (a *V1ApiService) CaCaTagSubSignPost(ctx context.Context, signCsr *SignCsr, caTag *string) error {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
@@ -1030,9 +1079,12 @@ func (a *V1ApiService) CaCaTagSubSignPost(ctx context.Context, signCsr *SignCsr,
 	return err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return */
+@return
+*/
 func (a *V1ApiService) CaCaTagTrimPost(ctx context.Context, caTag *string) error {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
@@ -1085,9 +1137,12 @@ func (a *V1ApiService) CaCaTagTrimPost(ctx context.Context, caTag *string) error
 	return err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return */
+@return
+*/
 func (a *V1ApiService) CaCaTagUrlsDelete(ctx context.Context, caTag *string) error {
 	var (
 		localVarHttpMethod = strings.ToUpper("Delete")
@@ -1140,10 +1195,13 @@ func (a *V1ApiService) CaCaTagUrlsDelete(ctx context.Context, caTag *string) err
 	return err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param modifyOcspUrl
 @param caTag caTag
-@return */
+@return
+*/
 func (a *V1ApiService) CaCaTagUrlsPut(ctx context.Context, modifyOcspUrl *ModifyOcspUrl, caTag *string) error {
 	var (
 		localVarHttpMethod = strings.ToUpper("Put")
@@ -1205,9 +1263,12 @@ func (a *V1ApiService) CaCaTagUrlsPut(ctx context.Context, modifyOcspUrl *Modify
 	return err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
-@return *ListCaUsersResponse*/
+@return *ListCaUsersResponse
+*/
 func (a *V1ApiService) CaCaTagUsersGet(ctx context.Context, caTag *string) (*ListCaUsersResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -1269,10 +1330,13 @@ func (a *V1ApiService) CaCaTagUsersGet(ctx context.Context, caTag *string) (*Lis
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param caTag caTag
 @param idNo idNo
-@return *BaseResponse*/
+@return *BaseResponse
+*/
 func (a *V1ApiService) CaCaTagUsersIdNoDelete(ctx context.Context, caTag *string, idNo *string) (*BaseResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Delete")
@@ -1335,10 +1399,13 @@ func (a *V1ApiService) CaCaTagUsersIdNoDelete(ctx context.Context, caTag *string
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param addCaUser
 @param caTag caTag
-@return *BaseResponse*/
+@return *BaseResponse
+*/
 func (a *V1ApiService) CaCaTagUsersPost(ctx context.Context, addCaUser *AddCaUser, caTag *string) (*BaseResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
@@ -1409,10 +1476,15 @@ func (a *V1ApiService) CaCaTagUsersPost(ctx context.Context, addCaUser *AddCaUse
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param optional (nil or map[string]interface{}) with one or more of:
-    @param "pageNo" (int32)
-@return *ListCaResponse*/
+
+	@param "pageNo" (int32)
+
+@return *ListCaResponse
+*/
 func (a *V1ApiService) CaGet(ctx context.Context, localVarOptionals map[string]interface{}) (*ListCaResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
@@ -1480,12 +1552,17 @@ func (a *V1ApiService) CaGet(ctx context.Context, localVarOptionals map[string]i
 	return &successPayload, err
 }
 
-/* V1ApiService
+/*
+	V1ApiService
+
 @param createCa
 @param caType
 @param optional (nil or map[string]interface{}) with one or more of:
-    @param "issuerId" (int64)
-@return *CreateCaResponse*/
+
+	@param "issuerId" (int64)
+
+@return *CreateCaResponse
+*/
 func (a *V1ApiService) CaPost(ctx context.Context, createCa *CreateCa, caType *string, localVarOptionals map[string]interface{}) (*CreateCaResponse, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
