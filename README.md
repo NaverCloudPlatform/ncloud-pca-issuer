@@ -141,13 +141,20 @@ cert-manager-webhook-65b766b5f8-m2cpb                   1/1     Running   0     
 ncloud-pca-issuer-controller-manager-6b777b58b9-vfm5b   2/2     Running   0          37h
 ```
 
-### SubAccount 인증 설정
-Private CA 권한이 있는 [SubAccount](https://guide.ncloud-docs.com/docs/management-management-4-1)를 생성하고, AccessKey/SecretKey를 준비합니다.
-AccessKey, SecretKey로 Ncloud Private CA Issuer가 사용할 secret을 생성합니다.
+### 인증 설정
+
+두 가지 방식 중 하나를 선택합니다.
+
+#### 1) SubAccount AccessKey/SecretKey
+Private CA 권한이 있는 [SubAccount](https://guide.ncloud-docs.com/docs/management-management-4-1)를 생성하고, AccessKey/SecretKey를 Secret으로 등록합니다.
 
 ```shell
 kubectl create secret generic ncloud-secret --from-literal=NCLOUD_ACCESS_KEY=ACCESSKEYIDACCESSKEY --from-literal=NCLOUD_SECRET_KEY=SECRETACCESSKEYSECRETACCESSKEYSECRETACCE -n cert-manager
 ```
+Issuer spec의 `credentialsRef.name`에 이 Secret 이름을 지정합니다.
+
+#### 2) NKS 노드 ServerRole (IAM 역할)
+[NKS 노드 IAM 역할](https://guide.ncloud-docs.com/docs/kubernetes-node-iam-role)에 Private CA 권한을 부여했다면, Secret을 생략하고 Issuer spec에서 `credentialsRef`를 빼면 SDK가 노드 메타데이터로부터 자격증명을 가져옵니다.
 
 ### Issuer 설정
 

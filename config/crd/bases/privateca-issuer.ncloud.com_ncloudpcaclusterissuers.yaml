@@ -64,8 +64,10 @@ spec:
                 minLength: 1
                 type: string
               credentialsRef:
-                description: CredentialsRef references the Secret containing NCloud
-                  API credentials.
+                description: |-
+                  CredentialsRef references the Secret containing NCloud API credentials.
+                  Omit to authenticate using the NKS node's ServerRole (IAM role) — see
+                  https://guide.ncloud-docs.com/docs/kubernetes-node-iam-role.
                 properties:
                   accessKeyField:
                     default: NCLOUD_ACCESS_KEY
@@ -73,8 +75,8 @@ spec:
                       NCloud access key.
                     type: string
                   name:
-                    description: Name of the Secret.
-                    minLength: 1
+                    description: Name of the Secret. Required when CredentialsRef
+                      is set.
                     type: string
                   namespace:
                     description: Namespace of the Secret. Required for ClusterIssuer;
@@ -85,8 +87,6 @@ spec:
                     description: SecretKeyField is the Secret data key holding the
                       NCloud secret key.
                     type: string
-                required:
-                - name
                 type: object
               region:
                 default: public
@@ -99,7 +99,6 @@ spec:
                 type: string
             required:
             - caTag
-            - credentialsRef
             type: object
           status:
             description: NcloudPCAIssuerStatus defines the observed state of NcloudPCAIssuer.

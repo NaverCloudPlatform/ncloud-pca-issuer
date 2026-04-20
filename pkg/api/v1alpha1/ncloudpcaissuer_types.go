@@ -38,16 +38,17 @@ type NcloudPCAIssuerSpec struct {
 	APIGatewayURL string `json:"apiGatewayUrl,omitempty"`
 
 	// CredentialsRef references the Secret containing NCloud API credentials.
-	// +kubebuilder:validation:Required
-	CredentialsRef NcloudCredentialsRef `json:"credentialsRef"`
+	// Omit to authenticate using the NKS node's ServerRole (IAM role) — see
+	// https://guide.ncloud-docs.com/docs/kubernetes-node-iam-role.
+	// +optional
+	CredentialsRef NcloudCredentialsRef `json:"credentialsRef,omitempty"`
 }
 
 // NcloudCredentialsRef points to the Secret that stores the NCloud API access and secret keys.
 type NcloudCredentialsRef struct {
-	// Name of the Secret.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name"`
+	// Name of the Secret. Required when CredentialsRef is set.
+	// +optional
+	Name string `json:"name,omitempty"`
 
 	// Namespace of the Secret. Required for ClusterIssuer; ignored for namespaced Issuer.
 	// +optional

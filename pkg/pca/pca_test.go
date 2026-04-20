@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/NaverCloudPlatform/ncloud-pca-issuer/pkg/api/v1alpha1"
 	"github.com/NaverCloudPlatform/ncloud-pca-issuer/pkg/privateca"
 )
 
@@ -39,6 +40,25 @@ func subjects(certs []*x509.Certificate) []string {
 		s = append(s, c.Subject.CommonName)
 	}
 	return s
+}
+
+func TestNewPcaClient_NoCredentialsFallsBackToServerRole(t *testing.T) {
+	// When credentialsRef is omitted, the signer must still produce a client
+	// (SDK credential chain picks up ServerRole / instance metadata).
+	// See issue #1: https://github.com/NaverCloudPlatform/ncloud-pca-issuer/issues/1
+	spec := &v1alpha1.NcloudPCAIssuerSpec{
+		CaTag:  "test-ca",
+		Region: "public",
+		// CredentialsRef intentionally left zero-valued.
+	}
+	p := &pcaSigner{spec: spec, gatewayURL: "https://pca.apigw.ntruss.com"}
+	client, err := p.newPcaClient()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if client == nil || client.V1Api == nil {
+		t.Fatal("expected a usable APIClient when credentialsRef is omitted")
+	}
 }
 
 func TestExtractCertAndCA_NilData(t *testing.T) {
