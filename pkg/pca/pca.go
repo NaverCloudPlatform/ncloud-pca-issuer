@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,191 +18,182 @@ package pca
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/NaverCloudPlatform/ncloud-pca-issuer/pkg/api/v1alpha1"
 	"github.com/NaverCloudPlatform/ncloud-pca-issuer/pkg/privateca"
 	"github.com/NaverCloudPlatform/ncloud-sdk-go-v2/ncloud"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"strings"
-	"time"
 )
 
-// A Signer is an abstraction of a certificate authority
+const (
+	defaultAccessKeyField = "NCLOUD_ACCESS_KEY"
+	defaultSecretKeyField = "NCLOUD_SECRET_KEY"
+)
+
+// A Signer is an abstraction of a certificate authority.
 type Signer interface {
-	// Sign signs a CSR and returns a cert and chain
+	// Sign signs a CSR and returns the leaf+intermediate chain (cert) and the
+	// root-most CA (ca) in PEM format.
 	Sign(csr []byte, expiry time.Duration) (cert []byte, ca []byte, err error)
 }
 
 type pcaSigner struct {
-	// caTag is id for ca
-	caTag string
-	// ncloudApiGw is url for ncloud api gw
-	ncloudApiGw string
-	// spec is a reference to the issuer Spec
-	spec *v1alpha1.NcloudPCAIssuerSpec
-	// namespace is the namespace to look for secrets in
+	spec      *v1alpha1.NcloudPCAIssuerSpec
 	namespace string
 
-	cfg    *ncloud.Configuration
-	client client.Client
-	ctx    context.Context
+	gatewayURL string
+	client     client.Client
+	ctx        context.Context
 }
 
-func (p *pcaSigner) Sign(csr []byte, expiry time.Duration) (cert []byte, ca []byte, err error) {
-	pcaClient, err := p.creatPcaClient()
+// NewSigner returns a Signer after validating credentials and the CA tag by
+// performing a read of the CA from the NCloud API.
+func NewSigner(ctx context.Context, spec *v1alpha1.NcloudPCAIssuerSpec, namespace string, k8sClient client.Client) (Signer, error) {
+	p, err := newSignerNoSelftest(ctx, spec, namespace, k8sClient)
+	if err != nil {
+		return nil, err
+	}
+
+	pcaClient, err := p.newPcaClient()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := pcaClient.V1Api.CaCaTagGet(ctx, &spec.CaTag); err != nil {
+		return nil, fmt.Errorf("get CA info (caTag=%s): %w", spec.CaTag, err)
+	}
+	return p, nil
+}
+
+func newSignerNoSelftest(ctx context.Context, spec *v1alpha1.NcloudPCAIssuerSpec, namespace string, k8sClient client.Client) (*pcaSigner, error) {
+	if spec.CaTag == "" {
+		return nil, errors.New("must specify a CaTag")
+	}
+	gw, err := APIGatewayURLFor(spec.Region, spec.APIGatewayURL)
+	if err != nil {
+		return nil, err
+	}
+	return &pcaSigner{
+		spec:       spec,
+		namespace:  namespace,
+		gatewayURL: gw,
+		client:     k8sClient,
+		ctx:        ctx,
+	}, nil
+}
+
+func (p *pcaSigner) Sign(csr []byte, expiry time.Duration) ([]byte, []byte, error) {
+	pcaClient, err := p.newPcaClient()
 	if err != nil {
 		return nil, nil, err
 	}
 	period := fmt.Sprintf("%d", int(expiry.Hours()/24))
 	csrPem := strings.TrimSpace(string(csr))
 	csrReq := &privateca.SignCsr{
-		CsrPem:  &csrPem,
-		Period:  &period,
-		KeyType: &p.spec.KeyType,
-		KeyBits: &p.spec.KeyBits,
+		CsrPem: &csrPem,
+		Period: &period,
 	}
 
-	csrResp, err := pcaClient.V1Api.CaCaTagCertSignPost(context.Background(), csrReq, &p.spec.CaTag, nil)
+	csrResp, err := pcaClient.V1Api.CaCaTagCertSignPost(p.ctx, csrReq, &p.spec.CaTag, nil)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return nil, nil, fmt.Errorf("sign CSR: %w", err)
 	}
-
 	return extractCertAndCA(csrResp.Data)
 }
 
-func NewSigner(ctx context.Context, spec *v1alpha1.NcloudPCAIssuerSpec, namespace string, client client.Client) (Signer, error) {
+func (p *pcaSigner) newPcaClient() (*privateca.APIClient, error) {
+	os.Setenv("NCLOUD_API_GW", p.gatewayURL)
 
-	p, err := newSignerNoSelftest(ctx, spec, client, namespace)
-	if err != nil {
-		return p, err
-	}
-	pcaClient, err := p.creatPcaClient()
-	if err != nil {
-		return p, err
-	}
-	ca, err := pcaClient.V1Api.CaCaTagGet(ctx, &spec.CaTag)
-	if err != nil {
-
+	ref := p.spec.CredentialsRef
+	if ref.Name == "" {
+		return privateca.NewAPIClient(privateca.NewConfiguration()), nil
 	}
 
-	pemBytes := []byte(ncloud.StringValue(ca.Data.CaCertInfo.CertPem))
-	block, _ := pem.Decode(pemBytes)
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, err
+	ns := ref.Namespace
+	if ns == "" {
+		ns = p.namespace
+	}
+	secret := &core.Secret{}
+	if err := p.client.Get(p.ctx, types.NamespacedName{Namespace: ns, Name: ref.Name}, secret); err != nil {
+		return nil, fmt.Errorf("failed to retrieve secret %s/%s: %w", ns, ref.Name, err)
 	}
 
-	var keyType, keyBits string
-	switch pub := cert.PublicKey.(type) {
-	case *rsa.PublicKey:
-		keyType = "RSA"
-		keyBits = strconv.Itoa(pub.N.BitLen())
-	case *ecdsa.PublicKey:
-		keyType = "ECDSA"
-		keyBits = strconv.Itoa(pub.Params().N.BitLen())
-	default:
-		panic("unknown type of public key")
+	accessField := ref.AccessKeyField
+	if accessField == "" {
+		accessField = defaultAccessKeyField
+	}
+	secretField := ref.SecretKeyField
+	if secretField == "" {
+		secretField = defaultSecretKeyField
 	}
 
-	if p.spec.KeyType == "" {
-		p.spec.KeyType = keyType
+	accessKey, ok := secret.Data[accessField]
+	if !ok {
+		return nil, fmt.Errorf("secret %s/%s missing key %q", ns, ref.Name, accessField)
 	}
-	if p.spec.KeyBits == "" {
-		p.spec.KeyBits = keyBits
-	}
-	if spec.KeyType != keyType || spec.KeyBits != keyBits {
-		return nil, fmt.Errorf("KeyType, KeyBits are not match from CA Cert[%s,%s]", keyType, keyBits)
+	secretKey, ok := secret.Data[secretField]
+	if !ok {
+		return nil, fmt.Errorf("secret %s/%s missing key %q", ns, ref.Name, secretField)
 	}
 
-	return p, nil
+	apiKey := &ncloud.APIKey{
+		AccessKey: string(accessKey),
+		SecretKey: string(secretKey),
+	}
+	return privateca.NewAPIClient(privateca.NewConfiguration(apiKey)), nil
 }
 
-// newSignerNoSelftest creates a Signer without doing a self-check, useful for tests
-func newSignerNoSelftest(ctx context.Context, spec *v1alpha1.NcloudPCAIssuerSpec, client client.Client, namespace string) (*pcaSigner, error) {
-	if spec.CaTag == "" {
-		return nil, fmt.Errorf("must specify a CaTag")
+func extractCertAndCA(data *privateca.SignCsrResponseData) ([]byte, []byte, error) {
+	if data == nil || data.Certificate == nil {
+		return nil, nil, errors.New("extractCertAndCA: response missing certificate")
 	}
-	p := &pcaSigner{
-		caTag:       spec.CaTag,
-		ncloudApiGw: spec.NcloudApiGw,
-		spec:        spec,
-		namespace:   namespace,
-		client:      client,
-		ctx:         ctx,
+	leafPEM := strings.TrimSpace(*data.Certificate)
+
+	var chainPEMs []string
+	if data.CaChain != nil {
+		for _, entry := range *data.CaChain {
+			if strings.TrimSpace(entry) != "" {
+				chainPEMs = append(chainPEMs, entry)
+			}
+		}
 	}
-	return p, nil
-}
-
-func (p *pcaSigner) creatPcaClient() (pcaClient *privateca.APIClient, err error) {
-	var apiKey *ncloud.APIKey
-	os.Setenv("NCLOUD_API_GW", p.ncloudApiGw)
-	if p.spec.SecretRef.Name != "" {
-		if p.spec.SecretRef.Namespace == "" {
-			p.spec.SecretRef.Namespace = p.namespace
-		}
-		secretNamespaceName := types.NamespacedName{
-			Namespace: p.spec.SecretRef.Namespace,
-			Name:      p.spec.SecretRef.Name,
-		}
-
-		secret := new(core.Secret)
-		if err := p.client.Get(p.ctx, secretNamespaceName, secret); err != nil {
-			return nil, fmt.Errorf("failed to retrieve secret: %v", err)
-		}
-
-		key := "NCLOUD_ACCESS_KEY"
-		if p.spec.SecretRef.AccessKeyIDSelector.Key != "" {
-			key = p.spec.SecretRef.AccessKeyIDSelector.Key
-		}
-		accessKey, ok := secret.Data[key]
-		if !ok {
-			return nil, errors.New("no NCLOUD Access Key Found")
-		}
-
-		key = "NCLOUD_SECRET_KEY"
-		if p.spec.SecretRef.SecretAccessKeySelector.Key != "" {
-			key = p.spec.SecretRef.SecretAccessKeySelector.Key
-		}
-		secretKey, ok := secret.Data[key]
-		if !ok {
-			return nil, errors.New("no NCLOUD Secret Key Found")
-		}
-		apiKey = &ncloud.APIKey{
-			AccessKey: string(accessKey),
-			SecretKey: string(secretKey),
-		}
-
-		pcaClient = privateca.NewAPIClient(privateca.NewConfiguration(apiKey))
-	} else {
-		pcaClient = privateca.NewAPIClient(privateca.NewConfiguration())
+	if len(chainPEMs) == 0 && data.Issuer != nil && strings.TrimSpace(*data.Issuer) != "" {
+		chainPEMs = []string{*data.Issuer}
 	}
-	return pcaClient, nil
-}
 
-func extractCertAndCA(data *privateca.SignCsrResponseData) (cert []byte, ca []byte, err error) {
-	if data == nil {
-		return nil, nil, errors.New("extractCertAndCA: certificate response is nil")
+	parsed, err := parsePEMChain(chainPEMs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("parse CA chain: %w", err)
 	}
-	certBuf := &bytes.Buffer{}
+	intermediates, root := splitRoot(parsed)
 
-	// Write the leaf to the buffer
-	certBuf.WriteString(strings.TrimSpace(*data.Certificate))
-	certBuf.WriteRune('\n')
+	var certBuf bytes.Buffer
+	certBuf.WriteString(leafPEM)
+	certBuf.WriteByte('\n')
+	for _, c := range intermediates {
+		if err := pem.Encode(&certBuf, &pem.Block{Type: "CERTIFICATE", Bytes: c.Raw}); err != nil {
+			return nil, nil, fmt.Errorf("encode intermediate: %w", err)
+		}
+	}
 
-	caBuf := &bytes.Buffer{}
-	caBuf.WriteString(strings.TrimSpace(*data.Issuer))
-	caBuf.WriteRune('\n')
-
-	// Return the root-most certificate in the CA field.
+	var caBuf bytes.Buffer
+	switch {
+	case root != nil:
+		if err := pem.Encode(&caBuf, &pem.Block{Type: "CERTIFICATE", Bytes: root.Raw}); err != nil {
+			return nil, nil, fmt.Errorf("encode root: %w", err)
+		}
+	case len(intermediates) > 0:
+		top := intermediates[len(intermediates)-1]
+		if err := pem.Encode(&caBuf, &pem.Block{Type: "CERTIFICATE", Bytes: top.Raw}); err != nil {
+			return nil, nil, fmt.Errorf("encode top intermediate: %w", err)
+		}
+	}
 	return certBuf.Bytes(), caBuf.Bytes(), nil
 }

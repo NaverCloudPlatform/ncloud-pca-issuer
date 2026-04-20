@@ -4,8 +4,6 @@ metadata:
   name: issuer-sample
 spec:
   caTag: abcd1234-efgh5678
-  ncloudApiGw: https://pca.apigw.ntruss.com
-  keyType: RSA
-  keyBits: '4096'
-  secretRef:
+  region: public
+  credentialsRef:
     name: ncloud-secret

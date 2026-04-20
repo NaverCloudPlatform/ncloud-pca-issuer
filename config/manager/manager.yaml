@@ -24,7 +24,7 @@ spec:
         args:
         - --zap-devel
         - "true"
-        image: nks-release.kr.ncr.ntruss.com/cert-manager-ncloud-pca-issuer:latest
+        image: controller:latest
         imagePullPolicy: Always
         name: ncloud-pca-issuer
         securityContext:
